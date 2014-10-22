@@ -1,0 +1,34 @@
+#!upstart
+description "chugalug server"
+author      "Mike Delano <mike@mediasilo.com>"
+
+env AWS_ACCESS_KEY_ID=%(AWS_ACCESS_KEY_ID)s
+env AWS_SECRET_ACCESS_KEY=%(AWS_SECRET_ACCESS_KEY)s
+env AWS_REGION=%(AWS_REGION)s
+env MEDIASILO_AWS_SQSQ=%(MEDIASILO_AWS_SQSQ)s
+env MEDIASILO_ES_SERVERS=%(MEDIASILO_ES_SERVERS)s
+
+start on startup
+stop on shutdown
+
+# Automatically restart process if crashed
+respawn
+
+# Essentially lets upstart know the process will detach itself to the background
+expect fork
+
+
+script
+    sudo echo $$ > /var/run/chugalug.pid
+    node /opt/mediasilo/chugalug/server.js >> /var/log/chugalug.sys.log 2>&1
+end script
+
+pre-start script
+    # Date format same as (new Date()).toISOString() for consistency
+    echo "[`date -u +%%Y-%%m-%%dT%%T.%%3NZ`] (sys) Starting" >> /var/log/chugalug.sys.log
+end script
+
+pre-stop script
+    sudo rm /var/run/chugalug.pid
+    echo "[`date -u +%%Y-%%m-%%dT%%T.%%3NZ`] (sys) Stopping" >> /var/log/chugalug.sys.log
+end script
